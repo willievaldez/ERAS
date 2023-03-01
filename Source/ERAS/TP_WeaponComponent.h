@@ -6,17 +6,17 @@
 #include "Components/ActorComponent.h"
 #include "TP_WeaponComponent.generated.h"
 
-class AFirstPersonMPCharacter;
+class AERASCharacter;
 
 UCLASS(Blueprintable, BlueprintType, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class FIRSTPERSONMP_API UTP_WeaponComponent : public UActorComponent
+class ERAS_API UTP_WeaponComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
 public:
 	/** Projectile class to spawn */
 	UPROPERTY(EditDefaultsOnly, Category=Projectile)
-	TSubclassOf<class AFirstPersonMPProjectile> ProjectileClass;
+	TSubclassOf<class AERASProjectile> ProjectileClass;
 
 	/** Sound to play each time we fire */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
@@ -35,7 +35,7 @@ public:
 
 	/** Attaches the actor to a FirstPersonCharacter */
 	UFUNCTION(BlueprintCallable, Category="Weapon")
-	void AttachWeapon(AFirstPersonMPCharacter* TargetCharacter);
+	void AttachWeapon(AERASCharacter* TargetCharacter);
 
 	/** Make the weapon Fire a Projectile */
 	UFUNCTION(BlueprintCallable, Category="Weapon")
@@ -49,5 +49,5 @@ protected:
 
 private:
 	/** The Character holding this weapon*/
-	AFirstPersonMPCharacter* Character;
+	AERASCharacter* Character;
 };

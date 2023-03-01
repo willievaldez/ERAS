@@ -4,7 +4,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/TextureRenderTarget2D.h"
 
-#include "FirstPersonMPCharacter.h"
+#include "ERASCharacter.h"
 
 APortal::APortal()
 {
@@ -20,10 +20,12 @@ APortal::APortal()
 
 	PrevPortalMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PrevPortalMesh"));
 	PrevPortalMesh->SetCollisionProfileName("OverlapAll");
+	PrevPortalMesh->bHiddenInSceneCapture = true;
 	PrevPortalMesh->SetupAttachment(RootComponent);
 
 	NextPortalMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("NextPortalMesh"));
 	NextPortalMesh->SetCollisionProfileName("OverlapAll");
+	NextPortalMesh->bHiddenInSceneCapture = true;
 	NextPortalMesh->SetupAttachment(RootComponent);
 
 	View = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("Capture"));
@@ -56,22 +58,31 @@ void APortal::BeginPlay()
 
 	IsClient = GetWorld()->GetFirstPlayerController()->GetLocalPlayer() != nullptr;
 
-	if (IsClient)
+	if (!bShouldUpdateCameraViews)
 	{
-		GeneratePortalTexture();
+		PrevPortalMesh->SetHiddenInGame(true, true);
+		NextPortalMesh->SetHiddenInGame(true, true);
 	}
 
 	if (PrevPortal)
 	{
 		PrevOffset = PrevPortal->GetActorLocation() - GetActorLocation();
 		PrevPortal->NotifyOnPortalTextureReady(this, &ThisClass::AttachPrevPortalTexture);
+		View->HiddenActors.Add(PrevPortal);
 	}
 
 	if (NextPortal)
 	{
 		NextOffset = NextPortal->GetActorLocation() - GetActorLocation();
 		NextPortal->NotifyOnPortalTextureReady(this, &ThisClass::AttachNextPortalTexture);
+		View->HiddenActors.Add(NextPortal);
 	}
+
+	if (IsClient)
+	{
+		GeneratePortalTexture();
+	}
+
 }
 
 void APortal::Tick(float DeltaSeconds)
@@ -118,7 +129,7 @@ void APortal::NotifyActorBeginOverlap(AActor* OtherActor)
 		return;
 	}
 
-	bool bPlayerTeleported = Cast<AFirstPersonMPCharacter>(OtherActor) != nullptr;
+	bool bPlayerTeleported = Cast<AERASCharacter>(OtherActor) != nullptr;
 
 	TeleportEnabled = false;
 	float DotProduct = GetActorRotation().Vector().Dot(OtherActor->GetVelocity());
@@ -161,9 +172,15 @@ void APortal::NotifyActorEndOverlap(AActor* OtherActor)
 	UE_LOG(LogTemp, Warning, TEXT("%s: END OVERLAP WITH %s"),
 		*GetName(), *OtherActor->GetName());
 
+	bool bPlayerTeleported = Cast<AERASCharacter>(OtherActor) != nullptr;
+
 	TeleportEnabled = true;
-	PrevPortalMesh->SetHiddenInGame(false, true);
-	NextPortalMesh->SetHiddenInGame(false, true);
+
+	if (bPlayerTeleported && bShouldUpdateCameraViews)
+	{
+		PrevPortalMesh->SetHiddenInGame(false, true);
+		NextPortalMesh->SetHiddenInGame(false, true);
+	}
 }
 
 void APortal::NotifyOnPortalTextureReady(APortal* Listener, void (APortal::* InFunc)())

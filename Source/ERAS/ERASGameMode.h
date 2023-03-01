@@ -4,15 +4,15 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "FirstPersonMPGameMode.generated.h"
+#include "ERASGameMode.generated.h"
 
 UCLASS(minimalapi)
-class AFirstPersonMPGameMode : public AGameModeBase
+class AERASGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 
 public:
-	AFirstPersonMPGameMode();
+	AERASGameMode();
 };
 
 

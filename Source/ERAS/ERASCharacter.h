@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "FirstPersonMPCharacter.generated.h"
+#include "ERASCharacter.generated.h"
 
 class UInputComponent;
 class USkeletalMeshComponent;
@@ -18,7 +18,7 @@ class USoundBase;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnUseItem);
 
 UCLASS(config=Game)
-class AFirstPersonMPCharacter : public ACharacter
+class AERASCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
@@ -31,7 +31,7 @@ class AFirstPersonMPCharacter : public ACharacter
 	UCameraComponent* FirstPersonCameraComponent;
 
 public:
-	AFirstPersonMPCharacter();
+	AERASCharacter();
 
 protected:
 	virtual void BeginPlay();

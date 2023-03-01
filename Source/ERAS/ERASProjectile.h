@@ -4,13 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "FirstPersonMPProjectile.generated.h"
+#include "ERASProjectile.generated.h"
 
 class USphereComponent;
 class UProjectileMovementComponent;
 
 UCLASS(config=Game)
-class AFirstPersonMPProjectile : public AActor
+class AERASProjectile : public AActor
 {
 	GENERATED_BODY()
 
@@ -23,7 +23,7 @@ class AFirstPersonMPProjectile : public AActor
 	UProjectileMovementComponent* ProjectileMovement;
 
 public:
-	AFirstPersonMPProjectile();
+	AERASProjectile();
 
 	/** called when projectile hits something */
 	UFUNCTION()

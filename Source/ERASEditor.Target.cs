@@ -3,12 +3,12 @@
 using UnrealBuildTool;
 using System.Collections.Generic;
 
-public class FirstPersonMPEditorTarget : TargetRules
+public class ERASEditorTarget : TargetRules
 {
-	public FirstPersonMPEditorTarget(TargetInfo Target) : base(Target)
+	public ERASEditorTarget(TargetInfo Target) : base(Target)
 	{
 		Type = TargetType.Editor;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
-		ExtraModuleNames.Add("FirstPersonMP");
+		ExtraModuleNames.Add("ERAS");
 	}
 }

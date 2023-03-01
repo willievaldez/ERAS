@@ -5,18 +5,11 @@
 	"Description": "",
 	"Modules": [
 		{
-			"Name": "FirstPersonMP",
+			"Name": "ERAS",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
 		}
 	],
 	"Plugins": [
-		{
-			"Name": "ModelingToolsEditorMode",
-			"Enabled": true,
-			"TargetAllowList": [
-				"Editor"
-			]
-		}
 	]
 }

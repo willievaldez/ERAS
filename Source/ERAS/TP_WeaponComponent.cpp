@@ -2,8 +2,8 @@
 
 
 #include "TP_WeaponComponent.h"
-#include "FirstPersonMPCharacter.h"
-#include "FirstPersonMPProjectile.h"
+#include "ERASCharacter.h"
+#include "ERASProjectile.h"
 #include "GameFramework/PlayerController.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Kismet/GameplayStatics.h"
@@ -39,7 +39,7 @@ void UTP_WeaponComponent::Fire()
 			ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
 	
 			// Spawn the projectile at the muzzle
-			World->SpawnActor<AFirstPersonMPProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+			World->SpawnActor<AERASProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
 		}
 	}
 	
@@ -70,7 +70,7 @@ void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	}
 }
 
-void UTP_WeaponComponent::AttachWeapon(AFirstPersonMPCharacter* TargetCharacter)
+void UTP_WeaponComponent::AttachWeapon(AERASCharacter* TargetCharacter)
 {
 	Character = TargetCharacter;
 	if(Character != nullptr)

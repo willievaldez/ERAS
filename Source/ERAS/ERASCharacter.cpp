@@ -1,7 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-#include "FirstPersonMPCharacter.h"
-#include "FirstPersonMPProjectile.h"
+#include "ERASCharacter.h"
+#include "ERASProjectile.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -10,9 +10,9 @@
 
 
 //////////////////////////////////////////////////////////////////////////
-// AFirstPersonMPCharacter
+// AERASCharacter
 
-AFirstPersonMPCharacter::AFirstPersonMPCharacter()
+AERASCharacter::AERASCharacter()
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
@@ -37,20 +37,20 @@ AFirstPersonMPCharacter::AFirstPersonMPCharacter()
 
 }
 
-void AFirstPersonMPCharacter::BeginPlay()
+void AERASCharacter::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
 }
 
-void AFirstPersonMPCharacter::Tick(float DeltaSeconds)
+void AERASCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 }
 
 //////////////////////////////////////////////////////////////////////////// Input
 
-void AFirstPersonMPCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
+void AERASCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
 	// Set up gameplay key bindings
 	check(PlayerInputComponent);
@@ -60,31 +60,31 @@ void AFirstPersonMPCharacter::SetupPlayerInputComponent(class UInputComponent* P
 	PlayerInputComponent->BindAction("Jump", IE_Released, this, &ACharacter::StopJumping);
 
 	// Bind fire event
-	PlayerInputComponent->BindAction("PrimaryAction", IE_Pressed, this, &AFirstPersonMPCharacter::OnPrimaryAction);
+	PlayerInputComponent->BindAction("PrimaryAction", IE_Pressed, this, &AERASCharacter::OnPrimaryAction);
 
 	// Enable touchscreen input
 	EnableTouchscreenMovement(PlayerInputComponent);
 
 	// Bind movement events
-	PlayerInputComponent->BindAxis("Move Forward / Backward", this, &AFirstPersonMPCharacter::MoveForward);
-	PlayerInputComponent->BindAxis("Move Right / Left", this, &AFirstPersonMPCharacter::MoveRight);
+	PlayerInputComponent->BindAxis("Move Forward / Backward", this, &AERASCharacter::MoveForward);
+	PlayerInputComponent->BindAxis("Move Right / Left", this, &AERASCharacter::MoveRight);
 
 	// We have 2 versions of the rotation bindings to handle different kinds of devices differently
 	// "Mouse" versions handle devices that provide an absolute delta, such as a mouse.
 	// "Gamepad" versions are for devices that we choose to treat as a rate of change, such as an analog joystick
 	PlayerInputComponent->BindAxis("Turn Right / Left Mouse", this, &APawn::AddControllerYawInput);
 	PlayerInputComponent->BindAxis("Look Up / Down Mouse", this, &APawn::AddControllerPitchInput);
-	PlayerInputComponent->BindAxis("Turn Right / Left Gamepad", this, &AFirstPersonMPCharacter::TurnAtRate);
-	PlayerInputComponent->BindAxis("Look Up / Down Gamepad", this, &AFirstPersonMPCharacter::LookUpAtRate);
+	PlayerInputComponent->BindAxis("Turn Right / Left Gamepad", this, &AERASCharacter::TurnAtRate);
+	PlayerInputComponent->BindAxis("Look Up / Down Gamepad", this, &AERASCharacter::LookUpAtRate);
 }
 
-void AFirstPersonMPCharacter::OnPrimaryAction()
+void AERASCharacter::OnPrimaryAction()
 {
 	// Trigger the OnItemUsed Event
 	OnUseItem.Broadcast();
 }
 
-void AFirstPersonMPCharacter::BeginTouch(const ETouchIndex::Type FingerIndex, const FVector Location)
+void AERASCharacter::BeginTouch(const ETouchIndex::Type FingerIndex, const FVector Location)
 {
 	if (TouchItem.bIsPressed == true)
 	{
@@ -100,7 +100,7 @@ void AFirstPersonMPCharacter::BeginTouch(const ETouchIndex::Type FingerIndex, co
 	TouchItem.bMoved = false;
 }
 
-void AFirstPersonMPCharacter::EndTouch(const ETouchIndex::Type FingerIndex, const FVector Location)
+void AERASCharacter::EndTouch(const ETouchIndex::Type FingerIndex, const FVector Location)
 {
 	if (TouchItem.bIsPressed == false)
 	{
@@ -109,7 +109,7 @@ void AFirstPersonMPCharacter::EndTouch(const ETouchIndex::Type FingerIndex, cons
 	TouchItem.bIsPressed = false;
 }
 
-void AFirstPersonMPCharacter::MoveForward(float Value)
+void AERASCharacter::MoveForward(float Value)
 {
 	if (Value != 0.0f)
 	{
@@ -118,7 +118,7 @@ void AFirstPersonMPCharacter::MoveForward(float Value)
 	}
 }
 
-void AFirstPersonMPCharacter::MoveRight(float Value)
+void AERASCharacter::MoveRight(float Value)
 {
 	if (Value != 0.0f)
 	{
@@ -127,24 +127,24 @@ void AFirstPersonMPCharacter::MoveRight(float Value)
 	}
 }
 
-void AFirstPersonMPCharacter::TurnAtRate(float Rate)
+void AERASCharacter::TurnAtRate(float Rate)
 {
 	// calculate delta for this frame from the rate information
 	AddControllerYawInput(Rate * TurnRateGamepad * GetWorld()->GetDeltaSeconds());
 }
 
-void AFirstPersonMPCharacter::LookUpAtRate(float Rate)
+void AERASCharacter::LookUpAtRate(float Rate)
 {
 	// calculate delta for this frame from the rate information
 	AddControllerPitchInput(Rate * TurnRateGamepad * GetWorld()->GetDeltaSeconds());
 }
 
-bool AFirstPersonMPCharacter::EnableTouchscreenMovement(class UInputComponent* PlayerInputComponent)
+bool AERASCharacter::EnableTouchscreenMovement(class UInputComponent* PlayerInputComponent)
 {
 	if (FPlatformMisc::SupportsTouchInput() || GetDefault<UInputSettings>()->bUseMouseForTouch)
 	{
-		PlayerInputComponent->BindTouch(EInputEvent::IE_Pressed, this, &AFirstPersonMPCharacter::BeginTouch);
-		PlayerInputComponent->BindTouch(EInputEvent::IE_Released, this, &AFirstPersonMPCharacter::EndTouch);
+		PlayerInputComponent->BindTouch(EInputEvent::IE_Pressed, this, &AERASCharacter::BeginTouch);
+		PlayerInputComponent->BindTouch(EInputEvent::IE_Released, this, &AERASCharacter::EndTouch);
 
 		return true;
 	}
