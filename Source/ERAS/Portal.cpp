@@ -11,6 +11,7 @@ APortal::APortal()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
+	PrimaryActorTick.TickGroup = ETickingGroup::TG_PostPhysics;
 
 	Root = RootComponent = CreateDefaultSubobject<USceneComponent>(USceneComponent::GetDefaultSceneRootVariableName());
 
@@ -41,7 +42,6 @@ void APortal::BeginPlay()
 	Super::BeginPlay();
 
 	View->bEnableClipPlane = true;
-	View->ClipPlaneBase = GetActorLocation();
 	View->bUseCustomProjectionMatrix = true;
 
 	View->PostProcessSettings.bOverride_AmbientOcclusionQuality = true;
@@ -97,6 +97,7 @@ void APortal::Tick(float DeltaSeconds)
 			//PrevOffset = PrevPortal->GetActorLocation() - GetActorLocation();
 			PrevPortal->View->SetWorldLocation(PCM->GetCameraLocation() + PrevPortal->GetActorLocation() - GetActorLocation());
 			PrevPortal->View->SetWorldRotation(PCM->GetCameraRotation());
+			PrevPortal->View->ClipPlaneBase = GetActorLocation() + GetActorRotation().Vector() * 200.0f;
 			PrevPortal->View->ClipPlaneNormal = PrevPortal->GetActorRotation().Vector() * -1.f;
 			PrevPortal->View->CustomProjectionMatrix = PlayerProjectionData.ProjectionMatrix;
 			PrevPortal->View->CaptureScene();
@@ -107,6 +108,7 @@ void APortal::Tick(float DeltaSeconds)
 			//NextOffset = NextPortal->GetActorLocation() - GetActorLocation();
 			NextPortal->View->SetWorldLocation(PCM->GetCameraLocation() + NextPortal->GetActorLocation() - GetActorLocation());
 			NextPortal->View->SetWorldRotation(PCM->GetCameraRotation());
+			NextPortal->View->ClipPlaneBase = GetActorLocation() - GetActorRotation().Vector() * 200.0f;
 			NextPortal->View->ClipPlaneNormal = NextPortal->GetActorRotation().Vector();
 			NextPortal->View->CustomProjectionMatrix = PlayerProjectionData.ProjectionMatrix;
 			NextPortal->View->CaptureScene();
@@ -138,9 +140,15 @@ void APortal::NotifyActorBeginOverlap(AActor* OtherActor)
 	UE_LOG(LogTemp, Warning, TEXT("%s: BEGIN OVERLAP WITH %s"),
 		*GetActorNameOrLabel(), *OtherActor->GetActorNameOrLabel());
 
+	AERASCharacter* Character = Cast<AERASCharacter>(OtherActor);
+
 	if (!TeleportEnabled)
 	{
-		SetVisibleTemp(false);
+		if (bShouldUpdatePortalViews && IsClient 
+			&& Character && Character->IsLocallyControlled())
+		{
+			SetVisibleTemp(false);
+		}
 		return;
 	}
 
@@ -163,11 +171,11 @@ void APortal::NotifyActorEndOverlap(AActor* OtherActor)
 	//UE_LOG(LogTemp, Warning, TEXT("%s: END OVERLAP WITH %s"),
 	//	*GetActorNameOrLabel(), *OtherActor->GetActorNameOrLabel());
 
-	bool bPlayerTeleported = Cast<AERASCharacter>(OtherActor) != nullptr;
+	AERASCharacter* Character = Cast<AERASCharacter>(OtherActor);
 
 	TeleportEnabled = true;
 
-	if (bPlayerTeleported && bShouldUpdatePortalViews)
+	if (Character && Character->IsLocallyControlled() && bShouldUpdatePortalViews)
 	{
 		SetVisibleTemp(true);
 	}
@@ -177,9 +185,9 @@ void APortal::SendTeleport(APortal* DestPortal, AActor* Actor)
 {
 	TeleportEnabled = false;
 
-	bool bPlayerTeleported = Cast<AERASCharacter>(Actor) != nullptr;
+	AERASCharacter* Character = Cast<AERASCharacter>(Actor);
 
-	if (IsClient && bPlayerTeleported)
+	if (IsClient && Character && Character->IsLocallyControlled())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%s: NOT viewing portal view"),
 			*GetActorNameOrLabel());
@@ -194,9 +202,9 @@ void APortal::ReceiveTeleport(APortal* SrcPortal, AActor* Actor)
 {
 	TeleportEnabled = false;
 
-	bool bPlayerTeleported = Cast<AERASCharacter>(Actor) != nullptr;
+	AERASCharacter* Character = Cast<AERASCharacter>(Actor);
 
-	if (IsClient && bPlayerTeleported)
+	if (IsClient && Character && Character->IsLocallyControlled())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%s: viewing portal view"),
 			*GetActorNameOrLabel());
