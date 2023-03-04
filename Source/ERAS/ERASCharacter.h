@@ -14,8 +14,10 @@ class UAnimMontage;
 class USoundBase;
 
 // Declaration of the delegate that will be called when the Primary Action is triggered
-// It is declared as dynamic so it can be accessed also in Blueprints
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnUseItem);
+DECLARE_DELEGATE(FOnUseItem);
+
+// Declaration of the delegate that will be called when the Scroll is triggered
+DECLARE_DELEGATE_OneParam(FOnScrollItem, float);
 
 UCLASS(config=Game)
 class AERASCharacter : public ACharacter
@@ -43,9 +45,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
 	float TurnRateGamepad;
 
-	/** Delegate to whom anyone can subscribe to receive this event */
-	UPROPERTY(BlueprintAssignable, Category = "Interaction")
 	FOnUseItem OnUseItem;
+	FOnScrollItem OnScrollItem;
 protected:
 	
 	/** Fires a projectile. */
@@ -68,6 +69,12 @@ protected:
 	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
 	 */
 	void LookUpAtRate(float Rate);
+
+	/**
+	 * Called via input when scroll wheel input is detected.
+	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
+	 */
+	void ScrollRate(float Rate);
 
 	struct TouchData
 	{

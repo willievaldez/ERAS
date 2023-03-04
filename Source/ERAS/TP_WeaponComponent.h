@@ -37,6 +37,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Weapon")
 	void AttachWeapon(AERASCharacter* TargetCharacter);
 
+	/** Attaches the actor to a FirstPersonCharacter */
+	UFUNCTION()
+	void ScrollWeapon(float ScrollRate);
+
 	/** Make the weapon Fire a Projectile */
 	UFUNCTION(BlueprintCallable, Category="Weapon")
 	void Fire();

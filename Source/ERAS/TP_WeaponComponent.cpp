@@ -61,12 +61,18 @@ void UTP_WeaponComponent::Fire()
 	}
 }
 
+void UTP_WeaponComponent::ScrollWeapon(float ScrollRate)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Scroll! %f"), ScrollRate);
+}
+
 void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	if(Character != nullptr)
 	{
 		// Unregister from the OnUseItem Event
-		Character->OnUseItem.RemoveDynamic(this, &UTP_WeaponComponent::Fire);
+		Character->OnUseItem.Unbind();
+		Character->OnScrollItem.Unbind();
 	}
 }
 
@@ -80,7 +86,10 @@ void UTP_WeaponComponent::AttachWeapon(AERASCharacter* TargetCharacter)
 		GetOwner()->AttachToComponent(Character->GetMesh1P(),AttachmentRules, FName(TEXT("GripPoint")));
 
 		// Register so that Fire is called every time the character tries to use the item being held
-		Character->OnUseItem.AddDynamic(this, &UTP_WeaponComponent::Fire);
+		Character->OnUseItem.BindUObject(this, &UTP_WeaponComponent::Fire);
+
+		// Register so that Scroll is called every time the character tries to scroll the item being held
+		Character->OnScrollItem.BindUObject(this, &UTP_WeaponComponent::ScrollWeapon);
 	}
 }
 

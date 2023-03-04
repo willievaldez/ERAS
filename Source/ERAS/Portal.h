@@ -44,9 +44,6 @@ protected:
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<class USceneCaptureComponent2D> View;
 
-	//UPROPERTY(EditAnywhere)
-	//TObjectPtr<class UPlanarReflectionComponent> View;
-
 	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite)
 	TObjectPtr<class UTextureRenderTarget2D> PortalViewTextureTarget;
 

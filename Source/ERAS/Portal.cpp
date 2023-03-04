@@ -3,6 +3,7 @@
 #include "Components/SceneCaptureComponent2D.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/TextureRenderTarget2D.h"
+#include "Components/PlanarReflectionComponent.h"
 
 #include "ERASCharacter.h"
 
@@ -10,8 +11,6 @@ APortal::APortal()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
-	PrimaryActorTick.bAllowTickOnDedicatedServer = true;
-	PrimaryActorTick.TickGroup = ETickingGroup::TG_PostPhysics;
 
 	Root = RootComponent = CreateDefaultSubobject<USceneComponent>(USceneComponent::GetDefaultSceneRootVariableName());
 
@@ -21,15 +20,19 @@ APortal::APortal()
 	PrevPortalMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PrevPortalMesh"));
 	PrevPortalMesh->SetCollisionProfileName("OverlapAll");
 	PrevPortalMesh->bHiddenInSceneCapture = true;
+	PrevPortalMesh->CastShadow = false;
 	PrevPortalMesh->SetupAttachment(RootComponent);
 
 	NextPortalMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("NextPortalMesh"));
 	NextPortalMesh->SetCollisionProfileName("OverlapAll");
 	NextPortalMesh->bHiddenInSceneCapture = true;
+	NextPortalMesh->CastShadow = false;
 	NextPortalMesh->SetupAttachment(RootComponent);
 
 	View = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("Capture"));
-	View->CaptureSource = ESceneCaptureSource::SCS_SceneColorHDRNoAlpha;
+	View->CaptureSource = ESceneCaptureSource::SCS_FinalColorHDR;
+	View->bCaptureEveryFrame = false;
+	View->bCaptureOnMovement = false;
 	View->SetupAttachment(RootComponent);
 }
 
@@ -56,26 +59,18 @@ void APortal::BeginPlay()
 	View->PostProcessSettings.bOverride_ScreenSpaceReflectionQuality = true;
 	View->PostProcessSettings.ScreenSpaceReflectionQuality = 0.0f;
 
-	IsClient = GetWorld()->GetFirstPlayerController()->GetLocalPlayer() != nullptr;
-
-	if (!bShouldUpdateCameraViews)
-	{
-		PrevPortalMesh->SetHiddenInGame(true, true);
-		NextPortalMesh->SetHiddenInGame(true, true);
-	}
+	IsClient = GetWorld()->GetFirstPlayerController() && GetWorld()->GetFirstPlayerController()->GetLocalPlayer() != nullptr;
 
 	if (PrevPortal)
 	{
 		PrevOffset = PrevPortal->GetActorLocation() - GetActorLocation();
 		PrevPortal->NotifyOnPortalTextureReady(this, &ThisClass::AttachPrevPortalTexture);
-		View->HiddenActors.Add(PrevPortal);
 	}
 
 	if (NextPortal)
 	{
 		NextOffset = NextPortal->GetActorLocation() - GetActorLocation();
 		NextPortal->NotifyOnPortalTextureReady(this, &ThisClass::AttachNextPortalTexture);
-		View->HiddenActors.Add(NextPortal);
 	}
 
 	if (IsClient)
@@ -105,6 +100,7 @@ void APortal::Tick(float DeltaSeconds)
 			PrevPortal->View->SetWorldRotation(PCM->GetCameraRotation());
 			PrevPortal->View->ClipPlaneNormal = PrevPortal->GetActorRotation().Vector() * -1.f;
 			PrevPortal->View->CustomProjectionMatrix = PlayerProjectionData.ProjectionMatrix;
+			PrevPortal->View->CaptureScene();
 		}
 
 		if (DotProduct > 0 && NextPortal)
@@ -113,6 +109,7 @@ void APortal::Tick(float DeltaSeconds)
 			NextPortal->View->SetWorldRotation(PCM->GetCameraRotation());
 			NextPortal->View->ClipPlaneNormal = NextPortal->GetActorRotation().Vector();
 			NextPortal->View->CustomProjectionMatrix = PlayerProjectionData.ProjectionMatrix;
+			NextPortal->View->CaptureScene();
 		}
 	}
 }
@@ -124,7 +121,7 @@ void APortal::NotifyActorBeginOverlap(AActor* OtherActor)
 	UE_LOG(LogTemp, Warning, TEXT("%s: BEGIN OVERLAP WITH %s"),
 		*GetName(), *OtherActor->GetName());
 
-	if (!TeleportEnabled)
+	if (IsClient || !TeleportEnabled)
 	{
 		return;
 	}
@@ -145,6 +142,8 @@ void APortal::NotifyActorBeginOverlap(AActor* OtherActor)
 			PrevPortal->NextPortalMesh->SetHiddenInGame(true, true);
 			PrevPortal->bShouldUpdateCameraViews = true;
 			bShouldUpdateCameraViews = false;
+			APlayerCameraManager* PCM = GetWorld()->GetFirstPlayerController()->PlayerCameraManager;
+			PCM->bGameCameraCutThisFrame = true;
 		}
 
 		OtherActor->SetActorLocation(OtherActor->GetActorLocation() + PrevOffset);
@@ -160,6 +159,8 @@ void APortal::NotifyActorBeginOverlap(AActor* OtherActor)
 			NextPortal->NextPortalMesh->SetHiddenInGame(true, true);
 			NextPortal->bShouldUpdateCameraViews = true;
 			bShouldUpdateCameraViews = false;
+			APlayerCameraManager* PCM = GetWorld()->GetFirstPlayerController()->PlayerCameraManager;
+			PCM->bGameCameraCutThisFrame = true;
 		}
 		OtherActor->SetActorLocation(OtherActor->GetActorLocation() + NextOffset);
 	}

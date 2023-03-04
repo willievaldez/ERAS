@@ -8,6 +8,7 @@
 #include "Components/InputComponent.h"
 #include "GameFramework/InputSettings.h"
 
+#include "Kismet/KismetSystemLibrary.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AERASCharacter
@@ -46,6 +47,23 @@ void AERASCharacter::BeginPlay()
 void AERASCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	if (OnUseItem.IsBound())
+	{
+		if (APlayerController* PC = Cast<APlayerController>(Controller))
+		{
+			FVector StartPos = PC->PlayerCameraManager->GetCameraLocation();
+			FVector EndPos = StartPos + (PC->PlayerCameraManager->GetCameraRotation().Vector() * 1000.0f);
+
+			FHitResult HitResult;
+			if (GetWorld()->LineTraceSingleByChannel(HitResult, StartPos, EndPos, ECollisionChannel::ECC_Visibility))
+			{
+				HitResult.Location.X = int32(HitResult.Location.X / 100.0f) * 100.0f;
+				HitResult.Location.Y = int32(HitResult.Location.Y / 100.0f) * 100.0f;
+				UKismetSystemLibrary::DrawDebugSphere(this, HitResult.Location);
+			}
+		}
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////// Input
@@ -62,6 +80,7 @@ void AERASCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 	// Bind fire event
 	PlayerInputComponent->BindAction("PrimaryAction", IE_Pressed, this, &AERASCharacter::OnPrimaryAction);
 
+
 	// Enable touchscreen input
 	EnableTouchscreenMovement(PlayerInputComponent);
 
@@ -76,12 +95,24 @@ void AERASCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInpu
 	PlayerInputComponent->BindAxis("Look Up / Down Mouse", this, &APawn::AddControllerPitchInput);
 	PlayerInputComponent->BindAxis("Turn Right / Left Gamepad", this, &AERASCharacter::TurnAtRate);
 	PlayerInputComponent->BindAxis("Look Up / Down Gamepad", this, &AERASCharacter::LookUpAtRate);
+
+	// Scroll wheel
+	PlayerInputComponent->BindAxis("Scroll Up / Down Mouse", this, &AERASCharacter::ScrollRate);
 }
 
 void AERASCharacter::OnPrimaryAction()
 {
 	// Trigger the OnItemUsed Event
-	OnUseItem.Broadcast();
+	OnUseItem.ExecuteIfBound();
+}
+
+void AERASCharacter::ScrollRate(float Rate)
+{
+	// Trigger the OnScrollWeapon Event
+	if (Rate != 0.0f)
+	{
+		OnScrollItem.ExecuteIfBound(Rate);
+	}
 }
 
 void AERASCharacter::BeginTouch(const ETouchIndex::Type FingerIndex, const FVector Location)
