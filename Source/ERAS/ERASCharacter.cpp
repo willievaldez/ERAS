@@ -8,7 +8,11 @@
 #include "Components/InputComponent.h"
 #include "GameFramework/InputSettings.h"
 
+#include "Portal.h"
+
+#include "Kismet/KismetMathLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "UObject/UObjectIterator.h"
 
 //////////////////////////////////////////////////////////////////////////
 // AERASCharacter
@@ -42,6 +46,31 @@ void AERASCharacter::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
+
+	float ShortestDist = 999999.9f; // TODO works until it doesnt
+	APortal* ClosestPortal = nullptr;
+	for (TObjectIterator<APortal> It; It; ++It)
+	{
+		if (APortal* Portal = *It)
+		{
+			float Dist = UKismetMathLibrary::VSizeSquared(GetActorLocation() - Portal->GetActorLocation());
+			if (Dist < ShortestDist)
+			{
+				ShortestDist = Dist;
+				ClosestPortal = Portal;
+			}
+
+			Portals.Add(Portal);
+		}
+	}
+
+	if (ClosestPortal)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%p: Initializing on portal %s"),
+			(void*)ClosestPortal, * ClosestPortal->GetActorNameOrLabel());
+		ClosestPortal->bShouldUpdatePortalViews = true;
+		ClosestPortal->SetVisibleTemp(true);
+	}
 }
 
 void AERASCharacter::Tick(float DeltaSeconds)

@@ -63,13 +63,11 @@ void APortal::BeginPlay()
 
 	if (PrevPortal)
 	{
-		PrevOffset = PrevPortal->GetActorLocation() - GetActorLocation();
 		PrevPortal->NotifyOnPortalTextureReady(this, &ThisClass::AttachPrevPortalTexture);
 	}
 
 	if (NextPortal)
 	{
-		NextOffset = NextPortal->GetActorLocation() - GetActorLocation();
 		NextPortal->NotifyOnPortalTextureReady(this, &ThisClass::AttachNextPortalTexture);
 	}
 
@@ -84,7 +82,7 @@ void APortal::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (bShouldUpdateCameraViews && IsClient)
+	if (bShouldUpdatePortalViews && IsClient)
 	{
 		APlayerCameraManager* PCM = GetWorld()->GetFirstPlayerController()->PlayerCameraManager;
 
@@ -96,7 +94,8 @@ void APortal::Tick(float DeltaSeconds)
 		float DotProduct = GetActorRotation().Vector().Dot(PCM->GetCameraRotation().Vector());
 		if (DotProduct < 0 && PrevPortal)
 		{
-			PrevPortal->View->SetWorldLocation(PCM->GetCameraLocation() + PrevOffset);
+			//PrevOffset = PrevPortal->GetActorLocation() - GetActorLocation();
+			PrevPortal->View->SetWorldLocation(PCM->GetCameraLocation() + PrevPortal->GetActorLocation() - GetActorLocation());
 			PrevPortal->View->SetWorldRotation(PCM->GetCameraRotation());
 			PrevPortal->View->ClipPlaneNormal = PrevPortal->GetActorRotation().Vector() * -1.f;
 			PrevPortal->View->CustomProjectionMatrix = PlayerProjectionData.ProjectionMatrix;
@@ -105,7 +104,8 @@ void APortal::Tick(float DeltaSeconds)
 
 		if (DotProduct > 0 && NextPortal)
 		{
-			NextPortal->View->SetWorldLocation(PCM->GetCameraLocation() + NextOffset);
+			//NextOffset = NextPortal->GetActorLocation() - GetActorLocation();
+			NextPortal->View->SetWorldLocation(PCM->GetCameraLocation() + NextPortal->GetActorLocation() - GetActorLocation());
 			NextPortal->View->SetWorldRotation(PCM->GetCameraRotation());
 			NextPortal->View->ClipPlaneNormal = NextPortal->GetActorRotation().Vector();
 			NextPortal->View->CustomProjectionMatrix = PlayerProjectionData.ProjectionMatrix;
@@ -114,55 +114,45 @@ void APortal::Tick(float DeltaSeconds)
 	}
 }
 
+void APortal::SetVisibleTemp(bool Visible)
+{
+	if (Visible)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s: UNHIDING PORTAL MESHES"),
+			*GetActorNameOrLabel());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s: HIDING PORTAL MESHES"),
+			*GetActorNameOrLabel());
+	}
+
+	PrevPortalMesh->SetVisibility(Visible);
+	NextPortalMesh->SetVisibility(Visible);
+}
+
 void APortal::NotifyActorBeginOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorBeginOverlap(OtherActor);
 
 	UE_LOG(LogTemp, Warning, TEXT("%s: BEGIN OVERLAP WITH %s"),
-		*GetName(), *OtherActor->GetName());
+		*GetActorNameOrLabel(), *OtherActor->GetActorNameOrLabel());
 
-	if (IsClient || !TeleportEnabled)
+	if (!TeleportEnabled)
 	{
+		SetVisibleTemp(false);
 		return;
 	}
-
-	bool bPlayerTeleported = Cast<AERASCharacter>(OtherActor) != nullptr;
 
 	TeleportEnabled = false;
 	float DotProduct = GetActorRotation().Vector().Dot(OtherActor->GetVelocity());
 	if (DotProduct < 0 && PrevPortal && PrevPortal->TeleportEnabled)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s: Teleporting to Prev: %s"),
-			*GetName(), *PrevPortal->GetName());
-		PrevPortal->TeleportEnabled = false;
-
-		if (bPlayerTeleported)
-		{
-			PrevPortal->PrevPortalMesh->SetHiddenInGame(true, true);
-			PrevPortal->NextPortalMesh->SetHiddenInGame(true, true);
-			PrevPortal->bShouldUpdateCameraViews = true;
-			bShouldUpdateCameraViews = false;
-			APlayerCameraManager* PCM = GetWorld()->GetFirstPlayerController()->PlayerCameraManager;
-			PCM->bGameCameraCutThisFrame = true;
-		}
-
-		OtherActor->SetActorLocation(OtherActor->GetActorLocation() + PrevOffset);
+		SendTeleport(PrevPortal, OtherActor);
 	}
 	if (DotProduct > 0 && NextPortal && NextPortal->TeleportEnabled)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s: Teleporting to Next: %s"),
-			*GetName(), *NextPortal->GetName());
-		NextPortal->TeleportEnabled = false;
-		if (bPlayerTeleported)
-		{
-			NextPortal->PrevPortalMesh->SetHiddenInGame(true, true);
-			NextPortal->NextPortalMesh->SetHiddenInGame(true, true);
-			NextPortal->bShouldUpdateCameraViews = true;
-			bShouldUpdateCameraViews = false;
-			APlayerCameraManager* PCM = GetWorld()->GetFirstPlayerController()->PlayerCameraManager;
-			PCM->bGameCameraCutThisFrame = true;
-		}
-		OtherActor->SetActorLocation(OtherActor->GetActorLocation() + NextOffset);
+		SendTeleport(NextPortal, OtherActor);
 	}
 }
 
@@ -170,17 +160,55 @@ void APortal::NotifyActorEndOverlap(AActor* OtherActor)
 {
 	Super::NotifyActorEndOverlap(OtherActor);
 
-	UE_LOG(LogTemp, Warning, TEXT("%s: END OVERLAP WITH %s"),
-		*GetName(), *OtherActor->GetName());
+	//UE_LOG(LogTemp, Warning, TEXT("%s: END OVERLAP WITH %s"),
+	//	*GetActorNameOrLabel(), *OtherActor->GetActorNameOrLabel());
 
 	bool bPlayerTeleported = Cast<AERASCharacter>(OtherActor) != nullptr;
 
 	TeleportEnabled = true;
 
-	if (bPlayerTeleported && bShouldUpdateCameraViews)
+	if (bPlayerTeleported && bShouldUpdatePortalViews)
 	{
-		PrevPortalMesh->SetHiddenInGame(false, true);
-		NextPortalMesh->SetHiddenInGame(false, true);
+		SetVisibleTemp(true);
+	}
+}
+
+void APortal::SendTeleport(APortal* DestPortal, AActor* Actor)
+{
+	TeleportEnabled = false;
+
+	bool bPlayerTeleported = Cast<AERASCharacter>(Actor) != nullptr;
+
+	if (IsClient && bPlayerTeleported)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s: NOT viewing portal view"),
+			*GetActorNameOrLabel());
+		bShouldUpdatePortalViews = false;
+		//SetVisibleTemp(false);
+	}
+
+	DestPortal->ReceiveTeleport(this, Actor);
+}
+
+void APortal::ReceiveTeleport(APortal* SrcPortal, AActor* Actor)
+{
+	TeleportEnabled = false;
+
+	bool bPlayerTeleported = Cast<AERASCharacter>(Actor) != nullptr;
+
+	if (IsClient && bPlayerTeleported)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("%s: viewing portal view"),
+			*GetActorNameOrLabel());
+
+		APlayerCameraManager* PCM = GetWorld()->GetFirstPlayerController()->PlayerCameraManager;
+		PCM->bGameCameraCutThisFrame = true;
+		bShouldUpdatePortalViews = true;
+		SetVisibleTemp(false);
+	}
+	else
+	{
+		Actor->SetActorLocation(Actor->GetActorLocation() + GetActorLocation() - SrcPortal->GetActorLocation());
 	}
 }
 

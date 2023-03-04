@@ -108,5 +108,8 @@ public:
 	/** Returns FirstPersonCameraComponent subobject **/
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 
+private:
+	TArray<TObjectPtr<class APortal>> Portals;
+
 };
 

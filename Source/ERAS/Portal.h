@@ -15,14 +15,22 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
+	UPROPERTY(EditAnywhere)
+	bool bShouldUpdatePortalViews = false;
+
 	bool TeleportEnabled = true;
 
 	DECLARE_EVENT(APortal, FOnPortalTextureReady);
 	FOnPortalTextureReady OnPortalTextureReady;
 
+	void SetVisibleTemp(bool Visible);
+
 	void NotifyOnPortalTextureReady(APortal* Listener, void (APortal::* InFunc)());
 	
 protected:
+	void SendTeleport(APortal* DestPortal, AActor* Actor);
+	void ReceiveTeleport(APortal* SrcPortal, AActor* Actor);
+
 	UPROPERTY(EditInstanceOnly, BlueprintReadOnly)
 	TObjectPtr<APortal> PrevPortal;
 
@@ -47,9 +55,6 @@ protected:
 	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite)
 	TObjectPtr<class UTextureRenderTarget2D> PortalViewTextureTarget;
 
-	UPROPERTY(EditAnywhere)
-	bool bShouldUpdateCameraViews = false;
-
 	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 	virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
 
@@ -60,7 +65,7 @@ protected:
 	UFUNCTION(BlueprintImplementableEvent)
 	void AttachPrevPortalTexture();
 
-	FVector PrevOffset;
-	FVector NextOffset;
+	//FVector PrevOffset;
+	//FVector NextOffset;
 	bool IsClient = false;
 };
