@@ -15,9 +15,6 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
-	UPROPERTY(EditAnywhere)
-	bool bShouldUpdatePortalViews = false;
-
 	bool TeleportEnabled = true;
 
 	DECLARE_EVENT(APortal, FOnPortalTextureReady);
@@ -38,7 +35,7 @@ protected:
 	TObjectPtr<APortal> NextPortal;
 
 	UPROPERTY(EditAnywhere)
-	TObjectPtr<USceneComponent> Root;
+	TObjectPtr<class USphereComponent> SphereRoot;
 
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UStaticMeshComponent> DoorFrame;
@@ -55,8 +52,17 @@ protected:
 	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite)
 	TObjectPtr<class UTextureRenderTarget2D> PortalViewTextureTarget;
 
-	virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
-	virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
+	//virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
+	//virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
+	UFUNCTION()
+	void SphereBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	UFUNCTION()
+	void SphereEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	UFUNCTION()
+	void PortalBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	UFUNCTION()
+	void PortalEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	void GeneratePortalTexture();
 
@@ -68,4 +74,5 @@ protected:
 	//FVector PrevOffset;
 	//FVector NextOffset;
 	bool IsClient = false;
+	TSet<TObjectPtr<AActor>> ActorsInSphere;
 };

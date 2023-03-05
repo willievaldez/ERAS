@@ -68,7 +68,6 @@ void AERASCharacter::BeginPlay()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%p: Initializing on portal %s"),
 			(void*)ClosestPortal, * ClosestPortal->GetActorNameOrLabel());
-		ClosestPortal->bShouldUpdatePortalViews = true;
 		ClosestPortal->SetVisibleTemp(true);
 	}
 }

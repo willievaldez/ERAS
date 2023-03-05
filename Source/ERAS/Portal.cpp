@@ -3,7 +3,7 @@
 #include "Components/SceneCaptureComponent2D.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/TextureRenderTarget2D.h"
-#include "Components/PlanarReflectionComponent.h"
+#include "Components/SphereComponent.h"
 
 #include "ERASCharacter.h"
 
@@ -13,10 +13,11 @@ APortal::APortal()
 	PrimaryActorTick.bStartWithTickEnabled = true;
 	PrimaryActorTick.TickGroup = ETickingGroup::TG_PostPhysics;
 
-	Root = RootComponent = CreateDefaultSubobject<USceneComponent>(USceneComponent::GetDefaultSceneRootVariableName());
+	RootComponent = SphereRoot = CreateDefaultSubobject<USphereComponent>(USphereComponent::GetDefaultSceneRootVariableName());
+	SphereRoot->SetCollisionProfileName("OverlapAll");
 
-	DoorFrame = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Frame"));
-	DoorFrame->SetupAttachment(RootComponent);
+	//DoorFrame = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Frame"));
+	//DoorFrame->SetupAttachment(RootComponent);
 
 	PrevPortalMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("PrevPortalMesh"));
 	PrevPortalMesh->SetCollisionProfileName("OverlapAll");
@@ -59,6 +60,13 @@ void APortal::BeginPlay()
 	View->PostProcessSettings.bOverride_ScreenSpaceReflectionQuality = true;
 	View->PostProcessSettings.ScreenSpaceReflectionQuality = 0.0f;
 
+	//PrevPortalMesh->OnComponentBeginOverlap.AddDynamic(this, &APortal::PortalBeginOverlap);
+	//PrevPortalMesh->OnComponentBeginOverlap.AddDynamic(this, &APortal::PortalEndOverlap);
+	SphereRoot->OnComponentBeginOverlap.AddDynamic(this, &APortal::SphereBeginOverlap);
+	SphereRoot->OnComponentEndOverlap.AddDynamic(this, &APortal::SphereEndOverlap);
+	NextPortalMesh->OnComponentBeginOverlap.AddDynamic(this, &APortal::PortalBeginOverlap);
+	NextPortalMesh->OnComponentEndOverlap.AddDynamic(this, &APortal::PortalEndOverlap);
+
 	IsClient = GetWorld()->GetFirstPlayerController() && GetWorld()->GetFirstPlayerController()->GetLocalPlayer() != nullptr;
 
 	if (PrevPortal)
@@ -82,7 +90,12 @@ void APortal::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (bShouldUpdatePortalViews && IsClient)
+	if (ActorsInSphere.IsEmpty())
+	{
+		return;
+	}
+
+	if (IsClient)
 	{
 		APlayerCameraManager* PCM = GetWorld()->GetFirstPlayerController()->PlayerCameraManager;
 
@@ -133,10 +146,23 @@ void APortal::SetVisibleTemp(bool Visible)
 	NextPortalMesh->SetVisibility(Visible);
 }
 
-void APortal::NotifyActorBeginOverlap(AActor* OtherActor)
+void APortal::SphereBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	Super::NotifyActorBeginOverlap(OtherActor);
+	UE_LOG(LogTemp, Warning, TEXT("%s: BEGIN SPHERE OVERLAP WITH %s"),
+		*GetActorNameOrLabel(), *OtherActor->GetActorNameOrLabel());
+	ActorsInSphere.Add(OtherActor);
+}
 
+void APortal::SphereEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	UE_LOG(LogTemp, Warning, TEXT("%s: END SPHERE OVERLAP WITH %s"),
+		*GetActorNameOrLabel(), *OtherActor->GetActorNameOrLabel());
+	ActorsInSphere.Remove(OtherActor);
+}
+
+
+void APortal::PortalBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
 	UE_LOG(LogTemp, Warning, TEXT("%s: BEGIN OVERLAP WITH %s"),
 		*GetActorNameOrLabel(), *OtherActor->GetActorNameOrLabel());
 
@@ -144,7 +170,7 @@ void APortal::NotifyActorBeginOverlap(AActor* OtherActor)
 
 	if (!TeleportEnabled)
 	{
-		if (bShouldUpdatePortalViews && IsClient 
+		if (IsClient
 			&& Character && Character->IsLocallyControlled())
 		{
 			SetVisibleTemp(false);
@@ -164,18 +190,16 @@ void APortal::NotifyActorBeginOverlap(AActor* OtherActor)
 	}
 }
 
-void APortal::NotifyActorEndOverlap(AActor* OtherActor)
+void APortal::PortalEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	Super::NotifyActorEndOverlap(OtherActor);
-
-	//UE_LOG(LogTemp, Warning, TEXT("%s: END OVERLAP WITH %s"),
-	//	*GetActorNameOrLabel(), *OtherActor->GetActorNameOrLabel());
+	UE_LOG(LogTemp, Warning, TEXT("%s: END OVERLAP WITH %s"),
+		*GetActorNameOrLabel(), *OtherActor->GetActorNameOrLabel());
 
 	AERASCharacter* Character = Cast<AERASCharacter>(OtherActor);
 
 	TeleportEnabled = true;
 
-	if (Character && Character->IsLocallyControlled() && bShouldUpdatePortalViews)
+	if (Character && Character->IsLocallyControlled())
 	{
 		SetVisibleTemp(true);
 	}
@@ -191,7 +215,6 @@ void APortal::SendTeleport(APortal* DestPortal, AActor* Actor)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("%s: NOT viewing portal view"),
 			*GetActorNameOrLabel());
-		bShouldUpdatePortalViews = false;
 		//SetVisibleTemp(false);
 	}
 
@@ -211,13 +234,14 @@ void APortal::ReceiveTeleport(APortal* SrcPortal, AActor* Actor)
 
 		APlayerCameraManager* PCM = GetWorld()->GetFirstPlayerController()->PlayerCameraManager;
 		PCM->bGameCameraCutThisFrame = true;
-		bShouldUpdatePortalViews = true;
 		SetVisibleTemp(false);
 	}
 	else
 	{
 		Actor->SetActorLocation(Actor->GetActorLocation() + GetActorLocation() - SrcPortal->GetActorLocation());
 	}
+
+	TeleportEnabled = true;
 }
 
 void APortal::NotifyOnPortalTextureReady(APortal* Listener, void (APortal::* InFunc)())
