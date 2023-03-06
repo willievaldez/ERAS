@@ -51,7 +51,7 @@ APortal::APortal()
 	//View->PostProcessSettings.FilmGrainIntensity = 0.0f;
 	//View->PostProcessSettings.bOverride_ScreenSpaceReflectionQuality = true;
 	//View->PostProcessSettings.ScreenSpaceReflectionQuality = 0.0f;
-	View->ShowFlags.DynamicShadows = false;
+	//View->ShowFlags.DynamicShadows = false;
 
 	View->SetupAttachment(RootComponent);
 }
@@ -219,13 +219,6 @@ void APortal::SendTeleport(APortal* DestPortal, AActor* Actor)
 
 	AERASCharacter* Character = Cast<AERASCharacter>(Actor);
 
-	if (IsClient && Character && Character->IsLocallyControlled())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("%s: NOT viewing portal view"),
-			*GetActorNameOrLabel());
-		//SetVisibleTemp(false);
-	}
-
 	DestPortal->ReceiveTeleport(this, Actor);
 }
 
@@ -237,9 +230,6 @@ void APortal::ReceiveTeleport(APortal* SrcPortal, AActor* Actor)
 
 	if (IsClient && Character && Character->IsLocallyControlled())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("%s: viewing portal view"),
-			*GetActorNameOrLabel());
-
 		APlayerCameraManager* PCM = GetWorld()->GetFirstPlayerController()->PlayerCameraManager;
 		PCM->bGameCameraCutThisFrame = true;
 		SetVisibleTemp(false);
