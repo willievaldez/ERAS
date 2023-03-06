@@ -4,6 +4,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/TextureRenderTarget2D.h"
 #include "Components/SphereComponent.h"
+#include "Kismet/KismetMaterialLibrary.h"
 
 #include "ERASCharacter.h"
 
@@ -33,8 +34,25 @@ APortal::APortal()
 
 	View = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("Capture"));
 	View->CaptureSource = ESceneCaptureSource::SCS_FinalColorHDR;
+	View->bEnableClipPlane = true;
+	View->bUseCustomProjectionMatrix = true;
 	View->bCaptureEveryFrame = false;
 	View->bCaptureOnMovement = false;
+	View->bAlwaysPersistRenderingState = true;
+
+	// Quality Flags
+	//View->PostProcessSettings.bOverride_AmbientOcclusionQuality = true;
+	//View->PostProcessSettings.AmbientOcclusionQuality = 0.0f;
+	//View->PostProcessSettings.bOverride_MotionBlurAmount = true;
+	//View->PostProcessSettings.MotionBlurAmount = 0.0f;
+	//View->PostProcessSettings.bOverride_SceneFringeIntensity = true;
+	//View->PostProcessSettings.SceneFringeIntensity = 0.0f;
+	//View->PostProcessSettings.bOverride_FilmGrainIntensity = true;
+	//View->PostProcessSettings.FilmGrainIntensity = 0.0f;
+	//View->PostProcessSettings.bOverride_ScreenSpaceReflectionQuality = true;
+	//View->PostProcessSettings.ScreenSpaceReflectionQuality = 0.0f;
+	View->ShowFlags.DynamicShadows = false;
+
 	View->SetupAttachment(RootComponent);
 }
 
@@ -42,28 +60,17 @@ void APortal::BeginPlay()
 {
 	Super::BeginPlay();
 
-	View->bEnableClipPlane = true;
-	View->bUseCustomProjectionMatrix = true;
 
-	View->PostProcessSettings.bOverride_AmbientOcclusionQuality = true;
-	View->PostProcessSettings.AmbientOcclusionQuality = 0.0f;
 
-	View->PostProcessSettings.bOverride_MotionBlurAmount = true;
-	View->PostProcessSettings.MotionBlurAmount = 0.0f;
-
-	View->PostProcessSettings.bOverride_SceneFringeIntensity = true;
-	View->PostProcessSettings.SceneFringeIntensity = 0.0f;
-
-	View->PostProcessSettings.bOverride_FilmGrainIntensity = true;
-	View->PostProcessSettings.FilmGrainIntensity = 0.0f;
-
-	View->PostProcessSettings.bOverride_ScreenSpaceReflectionQuality = true;
-	View->PostProcessSettings.ScreenSpaceReflectionQuality = 0.0f;
+	PrevMaterial = UKismetMaterialLibrary::CreateDynamicMaterialInstance(this, MaterialInterface);
+	PrevPortalMesh->SetMaterial(0, PrevMaterial);
+	NextMaterial = UKismetMaterialLibrary::CreateDynamicMaterialInstance(this, MaterialInterface);
+	NextPortalMesh->SetMaterial(0, NextMaterial);
 
 	//PrevPortalMesh->OnComponentBeginOverlap.AddDynamic(this, &APortal::PortalBeginOverlap);
 	//PrevPortalMesh->OnComponentBeginOverlap.AddDynamic(this, &APortal::PortalEndOverlap);
-	SphereRoot->OnComponentBeginOverlap.AddDynamic(this, &APortal::SphereBeginOverlap);
-	SphereRoot->OnComponentEndOverlap.AddDynamic(this, &APortal::SphereEndOverlap);
+	//SphereRoot->OnComponentBeginOverlap.AddDynamic(this, &APortal::SphereBeginOverlap);
+	//SphereRoot->OnComponentEndOverlap.AddDynamic(this, &APortal::SphereEndOverlap);
 	NextPortalMesh->OnComponentBeginOverlap.AddDynamic(this, &APortal::PortalBeginOverlap);
 	NextPortalMesh->OnComponentEndOverlap.AddDynamic(this, &APortal::PortalEndOverlap);
 
@@ -90,7 +97,8 @@ void APortal::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (ActorsInSphere.IsEmpty())
+	const TArray<FOverlapInfo>& FOverlapInfo = SphereRoot->GetOverlapInfos();
+	if (FOverlapInfo.IsEmpty())
 	{
 		return;
 	}
@@ -146,19 +154,19 @@ void APortal::SetVisibleTemp(bool Visible)
 	NextPortalMesh->SetVisibility(Visible);
 }
 
-void APortal::SphereBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	UE_LOG(LogTemp, Warning, TEXT("%s: BEGIN SPHERE OVERLAP WITH %s"),
-		*GetActorNameOrLabel(), *OtherActor->GetActorNameOrLabel());
-	ActorsInSphere.Add(OtherActor);
-}
-
-void APortal::SphereEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-	UE_LOG(LogTemp, Warning, TEXT("%s: END SPHERE OVERLAP WITH %s"),
-		*GetActorNameOrLabel(), *OtherActor->GetActorNameOrLabel());
-	ActorsInSphere.Remove(OtherActor);
-}
+//void APortal::SphereBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+//{
+//	UE_LOG(LogTemp, Warning, TEXT("%s: BEGIN SPHERE OVERLAP WITH %s"),
+//		*GetActorNameOrLabel(), *OtherActor->GetActorNameOrLabel());
+//	ActorsInSphere.Add(OtherActor);
+//}
+//
+//void APortal::SphereEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+//{
+//	UE_LOG(LogTemp, Warning, TEXT("%s: END SPHERE OVERLAP WITH %s"),
+//		*GetActorNameOrLabel(), *OtherActor->GetActorNameOrLabel());
+//	ActorsInSphere.Remove(OtherActor);
+//}
 
 
 void APortal::PortalBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -242,6 +250,16 @@ void APortal::ReceiveTeleport(APortal* SrcPortal, AActor* Actor)
 	}
 
 	TeleportEnabled = true;
+}
+
+void APortal::AttachPrevPortalTexture()
+{
+	PrevMaterial->SetTextureParameterValue(FName("Portal"), PrevPortal->PortalViewTextureTarget);
+}
+
+void APortal::AttachNextPortalTexture()
+{
+	NextMaterial->SetTextureParameterValue(FName("Portal"), NextPortal->PortalViewTextureTarget);
 }
 
 void APortal::NotifyOnPortalTextureReady(APortal* Listener, void (APortal::* InFunc)())

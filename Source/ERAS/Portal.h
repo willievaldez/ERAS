@@ -52,12 +52,21 @@ protected:
 	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite)
 	TObjectPtr<class UTextureRenderTarget2D> PortalViewTextureTarget;
 
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UMaterialInstanceDynamic> PrevMaterial;
+	
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<class UMaterialInstanceDynamic> NextMaterial;
+
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<class UMaterialInterface> MaterialInterface;
+
 	//virtual void NotifyActorBeginOverlap(AActor* OtherActor) override;
 	//virtual void NotifyActorEndOverlap(AActor* OtherActor) override;
-	UFUNCTION()
-	void SphereBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-	UFUNCTION()
-	void SphereEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	//UFUNCTION()
+	//void SphereBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	//UFUNCTION()
+	//void SphereEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	UFUNCTION()
 	void PortalBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
@@ -66,13 +75,12 @@ protected:
 
 	void GeneratePortalTexture();
 
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION()
 	void AttachNextPortalTexture();
-	UFUNCTION(BlueprintImplementableEvent)
+	UFUNCTION()
 	void AttachPrevPortalTexture();
 
 	//FVector PrevOffset;
 	//FVector NextOffset;
 	bool IsClient = false;
-	TSet<TObjectPtr<AActor>> ActorsInSphere;
 };

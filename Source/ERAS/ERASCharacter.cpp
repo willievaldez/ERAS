@@ -47,29 +47,32 @@ void AERASCharacter::BeginPlay()
 	// Call the base class  
 	Super::BeginPlay();
 
-	float ShortestDist = 999999.9f; // TODO works until it doesnt
-	APortal* ClosestPortal = nullptr;
+	//float ShortestDist = 999999.9f; // TODO works until it doesnt
+	//APortal* ClosestPortal = nullptr;
 	for (TObjectIterator<APortal> It; It; ++It)
 	{
 		if (APortal* Portal = *It)
 		{
-			float Dist = UKismetMathLibrary::VSizeSquared(GetActorLocation() - Portal->GetActorLocation());
-			if (Dist < ShortestDist)
-			{
-				ShortestDist = Dist;
-				ClosestPortal = Portal;
-			}
+			//float Dist = UKismetMathLibrary::VSizeSquared(GetActorLocation() - Portal->GetActorLocation());
+			//if (Dist < ShortestDist)
+			//{
+			//	ShortestDist = Dist;
+			//	ClosestPortal = Portal;
+			//}
 
-			Portals.Add(Portal);
+			//Portals.Add(Portal);
+			if (Portal->IsOverlappingActor(this))
+			{
+				UE_LOG(LogTemp, Warning, TEXT("%p: Initializing on portal %s"),
+					(void*)Portal, *Portal->GetActorNameOrLabel());
+				Portal->SetVisibleTemp(true);
+			}
 		}
 	}
 
-	if (ClosestPortal)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("%p: Initializing on portal %s"),
-			(void*)ClosestPortal, * ClosestPortal->GetActorNameOrLabel());
-		ClosestPortal->SetVisibleTemp(true);
-	}
+	//if (ClosestPortal)
+	//{
+	//}
 }
 
 void AERASCharacter::Tick(float DeltaSeconds)
