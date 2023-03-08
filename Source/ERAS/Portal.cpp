@@ -12,7 +12,7 @@ APortal::APortal()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
-	PrimaryActorTick.TickGroup = ETickingGroup::TG_PostPhysics;
+	PrimaryActorTick.TickGroup = ETickingGroup::TG_PrePhysics;
 
 	RootComponent = SphereRoot = CreateDefaultSubobject<USphereComponent>(USphereComponent::GetDefaultSceneRootVariableName());
 	SphereRoot->SetCollisionProfileName("OverlapAll");
@@ -33,7 +33,7 @@ APortal::APortal()
 	NextPortalMesh->SetupAttachment(RootComponent);
 
 	View = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("Capture"));
-	View->CaptureSource = ESceneCaptureSource::SCS_FinalColorHDR;
+	View->CaptureSource = ESceneCaptureSource::SCS_SceneColorHDRNoAlpha;
 	View->bEnableClipPlane = true;
 	View->bUseCustomProjectionMatrix = true;
 	View->bCaptureEveryFrame = false;
@@ -51,7 +51,7 @@ APortal::APortal()
 	//View->PostProcessSettings.FilmGrainIntensity = 0.0f;
 	//View->PostProcessSettings.bOverride_ScreenSpaceReflectionQuality = true;
 	//View->PostProcessSettings.ScreenSpaceReflectionQuality = 0.0f;
-	//View->ShowFlags.DynamicShadows = false;
+	View->ShowFlags.DynamicShadows = true;
 
 	View->SetupAttachment(RootComponent);
 }
@@ -67,10 +67,6 @@ void APortal::BeginPlay()
 	NextMaterial = UKismetMaterialLibrary::CreateDynamicMaterialInstance(this, MaterialInterface);
 	NextPortalMesh->SetMaterial(0, NextMaterial);
 
-	//PrevPortalMesh->OnComponentBeginOverlap.AddDynamic(this, &APortal::PortalBeginOverlap);
-	//PrevPortalMesh->OnComponentBeginOverlap.AddDynamic(this, &APortal::PortalEndOverlap);
-	//SphereRoot->OnComponentBeginOverlap.AddDynamic(this, &APortal::SphereBeginOverlap);
-	//SphereRoot->OnComponentEndOverlap.AddDynamic(this, &APortal::SphereEndOverlap);
 	NextPortalMesh->OnComponentBeginOverlap.AddDynamic(this, &APortal::PortalBeginOverlap);
 	NextPortalMesh->OnComponentEndOverlap.AddDynamic(this, &APortal::PortalEndOverlap);
 
@@ -122,6 +118,7 @@ void APortal::Tick(float DeltaSeconds)
 			PrevPortal->View->ClipPlaneNormal = PrevPortal->GetActorRotation().Vector() * -1.f;
 			PrevPortal->View->CustomProjectionMatrix = PlayerProjectionData.ProjectionMatrix;
 			PrevPortal->View->CaptureScene();
+			UE_LOG(LogTemp, Warning, TEXT("Capturing scene at %s - %s"), *PCM->GetCameraLocation().ToString(), *PCM->GetCameraRotation().ToString());
 		}
 
 		if (DotProduct > 0 && NextPortal)
@@ -133,6 +130,7 @@ void APortal::Tick(float DeltaSeconds)
 			NextPortal->View->ClipPlaneNormal = NextPortal->GetActorRotation().Vector();
 			NextPortal->View->CustomProjectionMatrix = PlayerProjectionData.ProjectionMatrix;
 			NextPortal->View->CaptureScene();
+			UE_LOG(LogTemp, Warning, TEXT("Capturing scene at %s - %s"), *PCM->GetCameraLocation().ToString(), *PCM->GetCameraRotation().ToString());
 		}
 	}
 }
@@ -153,21 +151,6 @@ void APortal::SetVisibleTemp(bool Visible)
 	PrevPortalMesh->SetVisibility(Visible);
 	NextPortalMesh->SetVisibility(Visible);
 }
-
-//void APortal::SphereBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-//{
-//	UE_LOG(LogTemp, Warning, TEXT("%s: BEGIN SPHERE OVERLAP WITH %s"),
-//		*GetActorNameOrLabel(), *OtherActor->GetActorNameOrLabel());
-//	ActorsInSphere.Add(OtherActor);
-//}
-//
-//void APortal::SphereEndOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-//{
-//	UE_LOG(LogTemp, Warning, TEXT("%s: END SPHERE OVERLAP WITH %s"),
-//		*GetActorNameOrLabel(), *OtherActor->GetActorNameOrLabel());
-//	ActorsInSphere.Remove(OtherActor);
-//}
-
 
 void APortal::PortalBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
@@ -270,15 +253,15 @@ void APortal::GeneratePortalTexture()
 	{
 		PortalViewTextureTarget = NewObject<UTextureRenderTarget2D>(this, UTextureRenderTarget2D::StaticClass(), TEXT("PortalViewRenderTarget"));
 		PortalViewTextureTarget->RenderTargetFormat = ETextureRenderTargetFormat::RTF_RGBA16f;
-		PortalViewTextureTarget->Filter = TextureFilter::TF_Bilinear;
+		//PortalViewTextureTarget->Filter = TextureFilter::TF_Bilinear;
 		PortalViewTextureTarget->SizeX = GSystemResolution.ResX;
 		PortalViewTextureTarget->SizeY = GSystemResolution.ResY;
-		PortalViewTextureTarget->ClearColor = FLinearColor::Black;
-		PortalViewTextureTarget->TargetGamma = 2.2f;
-		PortalViewTextureTarget->bNeedsTwoCopies = false;
-		PortalViewTextureTarget->AddressX = TextureAddress::TA_Clamp;
-		PortalViewTextureTarget->AddressY = TextureAddress::TA_Clamp;
-		PortalViewTextureTarget->bAutoGenerateMips = false;
+		//PortalViewTextureTarget->ClearColor = FLinearColor::Black;
+		//PortalViewTextureTarget->TargetGamma = 2.2f;
+		//PortalViewTextureTarget->bNeedsTwoCopies = false;
+		//PortalViewTextureTarget->AddressX = TextureAddress::TA_Clamp;
+		//PortalViewTextureTarget->AddressY = TextureAddress::TA_Clamp;
+		//PortalViewTextureTarget->bAutoGenerateMips = false;
 		View->TextureTarget = PortalViewTextureTarget;
 
 		PortalViewTextureTarget->UpdateResource();

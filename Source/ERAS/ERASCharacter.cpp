@@ -189,6 +189,19 @@ void AERASCharacter::MoveRight(float Value)
 	}
 }
 
+
+void AERASCharacter::AddControllerPitchInput(float Val)
+{
+	Super::AddControllerPitchInput(Val);
+	APlayerCameraManager* PCM = GetWorld()->GetFirstPlayerController()->PlayerCameraManager;
+}
+
+void AERASCharacter::AddControllerYawInput(float Val)
+{
+	Super::AddControllerYawInput(Val);
+	APlayerCameraManager* PCM = GetWorld()->GetFirstPlayerController()->PlayerCameraManager;
+}
+
 void AERASCharacter::TurnAtRate(float Rate)
 {
 	// calculate delta for this frame from the rate information

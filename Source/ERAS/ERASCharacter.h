@@ -92,6 +92,8 @@ protected:
 protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
+	virtual void AddControllerPitchInput(float Val) override;
+	virtual void AddControllerYawInput(float Val) override;
 	// End of APawn interface
 
 	/* 
